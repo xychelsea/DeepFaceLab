@@ -164,33 +164,10 @@ class SampleGeneratorFaceXSeg(SampleGeneratorBase):
                         krn = krn - krn % 2 + 1
                         img = img + cv2.GaussianBlur(img*(1-mask), (krn,krn), 0)
 
-                    img = imagelib.apply_random_overlay_triangle(img, max_alpha=0.25, mask=sd.random_circle_faded ([resolution,resolution]))
-                    
                     if np.random.randint(2) == 0:
                         img = imagelib.apply_random_hsv_shift(img, mask=sd.random_circle_faded ([resolution,resolution]))
                     else:
                         img = imagelib.apply_random_rgb_levels(img, mask=sd.random_circle_faded ([resolution,resolution]))
-<<<<<<< HEAD
-                    
-                    if np.random.randint(2) == 0:
-                        # random face flare
-                        krn = np.random.randint( resolution//4, resolution )
-                        krn = krn - krn % 2 + 1
-                        img = img + cv2.GaussianBlur(img*mask, (krn,krn), 0)
-
-                    if np.random.randint(2) == 0:
-                        img = imagelib.apply_random_sharpen( img, sharpen_chance, sharpen_kernel_max_size, mask=sd.random_circle_faded ([resolution,resolution]))
-                    else:
-                        img = imagelib.apply_random_motion_blur( img, motion_blur_chance, motion_blur_mb_max_size, mask=sd.random_circle_faded ([resolution,resolution]))
-                        img = imagelib.apply_random_gaussian_blur( img, gaussian_blur_chance, gaussian_blur_kernel_max_size, mask=sd.random_circle_faded ([resolution,resolution]))
-                        
-                    if np.random.randint(2) == 0:
-                        img = imagelib.apply_random_nearest_resize( img, random_bilinear_resize_chance, random_bilinear_resize_max_size_per, mask=sd.random_circle_faded ([resolution,resolution]))
-                    else:
-                        img = imagelib.apply_random_bilinear_resize( img, random_bilinear_resize_chance, random_bilinear_resize_max_size_per, mask=sd.random_circle_faded ([resolution,resolution]))
-                    img = np.clip(img, 0, 1)
-
-=======
                         
                     if np.random.randint(2) == 0:
                         img = imagelib.apply_random_sharpen( img, sharpen_chance, sharpen_kernel_max_size, mask=sd.random_circle_faded ([resolution,resolution]))
@@ -204,7 +181,6 @@ class SampleGeneratorFaceXSeg(SampleGeneratorBase):
                         img = imagelib.apply_random_bilinear_resize( img, random_bilinear_resize_chance, random_bilinear_resize_max_size_per, mask=sd.random_circle_faded ([resolution,resolution]))
                     img = np.clip(img, 0, 1)
 
->>>>>>> upstream/master
                     img = imagelib.apply_random_jpeg_compress( img, random_jpeg_compress_chance, mask=sd.random_circle_faded ([resolution,resolution]))
 
                     if data_format == "NCHW":

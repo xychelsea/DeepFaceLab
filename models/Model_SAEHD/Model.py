@@ -172,11 +172,7 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             self.options['ct_mode'] = io.input_str (f"Color transfer for src faceset", default_ct_mode, ['none','rct','lct','mkl','idt','sot'], help_message="Change color distribution of src samples close to dst samples. Try all modes to find the best.")
             self.options['clipgrad'] = io.input_bool ("Enable gradient clipping", default_clipgrad, help_message="Gradient clipping reduces chance of model collapse, sacrificing speed of training.")
 
-<<<<<<< HEAD
-            self.options['pretrain'] = io.input_bool ("Enable pretraining mode", default_pretrain, help_message="Pretrain the model with large amount of various faces. After that, model can be used to train the fakes more quickly. Forces random_warp=Y, random_flips=Y, gan_power=0.0, lr_dropout=N, styles=0.0, uniform_yaw=Y")
-=======
             self.options['pretrain'] = io.input_bool ("Enable pretraining mode", default_pretrain, help_message="Pretrain the model with large amount of various faces. After that, model can be used to train the fakes more quickly. Forces random_warp=N, random_flips=Y, gan_power=0.0, lr_dropout=N, styles=0.0, uniform_yaw=Y")
->>>>>>> upstream/master
 
         if self.options['pretrain'] and self.get_pretraining_data_path() is None:
             raise Exception("pretraining_data_path is not defined")
@@ -669,13 +665,6 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             if self.pretrain_just_disabled:
                 self.update_sample_for_preview(force_new=True)
     
-<<<<<<< HEAD
-    def dump_ckpt(self):
-        tf = nn.tf
-        
-        
-        with tf.device ('/CPU:0'):
-=======
     def export_dfm (self):
         output_path=self.get_strpath_storage_for_file('model.dfm')
         
@@ -685,7 +674,6 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
         nn.set_data_format('NCHW')
         
         with tf.device (nn.tf_default_device_name):
->>>>>>> upstream/master
             warped_dst = tf.placeholder (nn.floatx, (None, self.resolution, self.resolution, 3), name='in_face')
             warped_dst = tf.transpose(warped_dst, (0,3,1,2))
             
@@ -709,20 +697,10 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             gpu_pred_dst_dstm = tf.transpose(gpu_pred_dst_dstm, (0,2,3,1))
             gpu_pred_src_dstm = tf.transpose(gpu_pred_src_dstm, (0,2,3,1))
 
-<<<<<<< HEAD
-            
-        saver = tf.train.Saver()
-=======
->>>>>>> upstream/master
         tf.identity(gpu_pred_dst_dstm, name='out_face_mask')
         tf.identity(gpu_pred_src_dst, name='out_celeb_face')
         tf.identity(gpu_pred_src_dstm, name='out_celeb_face_mask')       
         
-<<<<<<< HEAD
-        saver.save(nn.tf_sess, self.get_strpath_storage_for_file('.ckpt') )
-
-        
-=======
         output_graph_def = tf.graph_util.convert_variables_to_constants(
             nn.tf_sess, 
             tf.get_default_graph().as_graph_def(), 
@@ -739,7 +717,6 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
                 opset=13,
                 output_path=output_path)
                 
->>>>>>> upstream/master
     #override
     def get_model_filename_list(self):
         return self.model_filename_list

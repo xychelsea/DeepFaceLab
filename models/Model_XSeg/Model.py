@@ -94,11 +94,6 @@ class XSegModel(ModelBase):
             gpu_loss_gvs = []
 
             for gpu_id in range(gpu_count):
-<<<<<<< HEAD
-
-
-=======
->>>>>>> upstream/master
                 with tf.device(f'/{devices[gpu_id].tf_dev_type}:{gpu_id}' if len(devices) != 0 else f'/CPU:0' ):
                     with tf.device(f'/CPU:0'):
                         # slice on CPU, otherwise all batch data will be transfered to GPU first
@@ -110,10 +105,6 @@ class XSegModel(ModelBase):
                     # process model tensors
                     gpu_pred_logits_t, gpu_pred_t = self.model.flow(gpu_input_t, pretrain=self.pretrain)
                     gpu_pred_list.append(gpu_pred_t)
-<<<<<<< HEAD
-
-                    gpu_loss = tf.reduce_mean( tf.nn.sigmoid_cross_entropy_with_logits(labels=gpu_target_t, logits=gpu_pred_logits_t), axis=[1,2,3])
-=======
                     
                     
                     if self.pretrain:
@@ -130,7 +121,6 @@ class XSegModel(ModelBase):
                         gpu_loss += tf.reduce_mean (10*tf.square(gpu_target_t_blur-gpu_pred_t_blur), axis=[1,2,3])
                     else:
                         gpu_loss = tf.reduce_mean( tf.nn.sigmoid_cross_entropy_with_logits(labels=gpu_target_t, logits=gpu_pred_logits_t), axis=[1,2,3])
->>>>>>> upstream/master
                       
                     gpu_losses += [gpu_loss]
 
