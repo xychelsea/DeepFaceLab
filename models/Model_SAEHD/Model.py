@@ -29,7 +29,8 @@ class SAEHDModel(ModelBase):
         yn_str = {True:'y',False:'n'}
         min_res = 64
         max_res = 640
-
+    
+        #default_usefp16            = self.options['use_fp16']           = self.load_or_def_option('use_fp16', False)
         default_resolution         = self.options['resolution']         = self.load_or_def_option('resolution', 128)
         default_face_type          = self.options['face_type']          = self.load_or_def_option('face_type', 'f')
         default_models_opt_on_gpu  = self.options['models_opt_on_gpu']  = self.load_or_def_option('models_opt_on_gpu', True)
@@ -68,7 +69,8 @@ class SAEHDModel(ModelBase):
             self.ask_random_src_flip()
             self.ask_random_dst_flip()
             self.ask_batch_size(suggest_batch_size)
-
+            #self.options['use_fp16'] = io.input_bool ("Use fp16", default_usefp16, help_message='Increases training/inference speed, reduces model size. Model may crash. Enable it after 1-5k iters.')
+            
         if self.is_first_run():
             resolution = io.input_int("Resolution", default_resolution, add_info="64-640", help_message="More resolution requires more VRAM and time to train. Value will be adjusted to multiple of 16 and 32 for -d archi.")
             resolution = np.clip ( (resolution // 16) * 16, min_res, max_res)
@@ -150,13 +152,13 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
 
             self.options['random_warp'] = io.input_bool ("Enable random warp of samples", default_random_warp, help_message="Random warp is required to generalize facial expressions of both faces. When the face is trained enough, you can disable it to get extra sharpness and reduce subpixel shake for less amount of iterations.")
 
-            self.options['gan_power'] = np.clip ( io.input_number ("GAN power", default_gan_power, add_info="0.0 .. 1.0", help_message="Forces the neural network to learn small details of the face. Enable it only when the face is trained enough with lr_dropout(on) and random_warp(off), and don't disable. The higher the value, the higher the chances of artifacts. Typical fine value is 0.1"), 0.0, 1.0 )
+            self.options['gan_power'] = np.clip ( io.input_number ("GAN power", default_gan_power, add_info="0.0 .. 5.0", help_message="Forces the neural network to learn small details of the face. Enable it only when the face is trained enough with lr_dropout(on) and random_warp(off), and don't disable. The higher the value, the higher the chances of artifacts. Typical fine value is 0.1"), 0.0, 5.0 )
             
             if self.options['gan_power'] != 0.0:                
                 gan_patch_size = np.clip ( io.input_int("GAN patch size", default_gan_patch_size, add_info="3-640", help_message="The higher patch size, the higher the quality, the more VRAM is required. You can get sharper edges even at the lowest setting. Typical fine value is resolution / 8." ), 3, 640 )
                 self.options['gan_patch_size'] = gan_patch_size
                 
-                gan_dims = np.clip ( io.input_int("GAN dimensions", default_gan_dims, add_info="4-64", help_message="The dimensions of the GAN network. The higher dimensions, the more VRAM is required. You can get sharper edges even at the lowest setting. Typical fine value is 16." ), 4, 64 )
+                gan_dims = np.clip ( io.input_int("GAN dimensions", default_gan_dims, add_info="4-512", help_message="The dimensions of the GAN network. The higher dimensions, the more VRAM is required. You can get sharper edges even at the lowest setting. Typical fine value is 16." ), 4, 512 )
                 self.options['gan_dims'] = gan_dims
                 
             if 'df' in self.options['archi']:
@@ -170,7 +172,11 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             self.options['ct_mode'] = io.input_str (f"Color transfer for src faceset", default_ct_mode, ['none','rct','lct','mkl','idt','sot'], help_message="Change color distribution of src samples close to dst samples. Try all modes to find the best.")
             self.options['clipgrad'] = io.input_bool ("Enable gradient clipping", default_clipgrad, help_message="Gradient clipping reduces chance of model collapse, sacrificing speed of training.")
 
+<<<<<<< HEAD
             self.options['pretrain'] = io.input_bool ("Enable pretraining mode", default_pretrain, help_message="Pretrain the model with large amount of various faces. After that, model can be used to train the fakes more quickly. Forces random_warp=Y, random_flips=Y, gan_power=0.0, lr_dropout=N, styles=0.0, uniform_yaw=Y")
+=======
+            self.options['pretrain'] = io.input_bool ("Enable pretraining mode", default_pretrain, help_message="Pretrain the model with large amount of various faces. After that, model can be used to train the fakes more quickly. Forces random_warp=N, random_flips=Y, gan_power=0.0, lr_dropout=N, styles=0.0, uniform_yaw=Y")
+>>>>>>> upstream/master
 
         if self.options['pretrain'] and self.get_pretraining_data_path() is None:
             raise Exception("pretraining_data_path is not defined")
@@ -217,7 +223,11 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             self.set_iter(0)
 
         adabelief = self.options['adabelief']
-
+        
+        use_fp16 = False
+        if self.is_exporting:
+            use_fp16 = io.input_bool ("Export quantized?", False, help_message='Makes the exported model faster. If you have problems, disable this option.')
+        
         self.gan_power = gan_power = 0.0 if self.pretrain else self.options['gan_power']
         random_warp = False if self.pretrain else self.options['random_warp']
         random_src_flip = self.random_src_flip if not self.pretrain else True
@@ -260,7 +270,7 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             self.target_dstm_em = tf.placeholder (nn.floatx, mask_shape, name='target_dstm_em')
 
         # Initializing model classes
-        model_archi = nn.DeepFakeArchi(resolution, opts=archi_opts)
+        model_archi = nn.DeepFakeArchi(resolution, use_fp16=use_fp16, opts=archi_opts)
 
         with tf.device (models_opt_device):
             if 'df' in archi_type:
@@ -467,7 +477,7 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
 
                         gpu_G_loss += self.options['true_face_power']*DLoss(gpu_src_code_d_ones, gpu_src_code_d)
 
-                        gpu_D_code_loss = (DLoss(gpu_src_code_d_ones , gpu_dst_code_d) + \
+                        gpu_D_code_loss = (DLoss(gpu_dst_code_d_ones , gpu_dst_code_d) + \
                                            DLoss(gpu_src_code_d_zeros, gpu_src_code_d) ) * 0.5
 
                         gpu_D_code_loss_gvs += [ nn.gradients (gpu_D_code_loss, self.code_discriminator.get_weights() ) ]
@@ -659,11 +669,23 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             if self.pretrain_just_disabled:
                 self.update_sample_for_preview(force_new=True)
     
+<<<<<<< HEAD
     def dump_ckpt(self):
         tf = nn.tf
         
         
         with tf.device ('/CPU:0'):
+=======
+    def export_dfm (self):
+        output_path=self.get_strpath_storage_for_file('model.dfm')
+        
+        io.log_info(f'Dumping .dfm to {output_path}')
+        
+        tf = nn.tf
+        nn.set_data_format('NCHW')
+        
+        with tf.device (nn.tf_default_device_name):
+>>>>>>> upstream/master
             warped_dst = tf.placeholder (nn.floatx, (None, self.resolution, self.resolution, 3), name='in_face')
             warped_dst = tf.transpose(warped_dst, (0,3,1,2))
             
@@ -687,15 +709,37 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
             gpu_pred_dst_dstm = tf.transpose(gpu_pred_dst_dstm, (0,2,3,1))
             gpu_pred_src_dstm = tf.transpose(gpu_pred_src_dstm, (0,2,3,1))
 
+<<<<<<< HEAD
             
         saver = tf.train.Saver()
+=======
+>>>>>>> upstream/master
         tf.identity(gpu_pred_dst_dstm, name='out_face_mask')
         tf.identity(gpu_pred_src_dst, name='out_celeb_face')
         tf.identity(gpu_pred_src_dstm, name='out_celeb_face_mask')       
         
+<<<<<<< HEAD
         saver.save(nn.tf_sess, self.get_strpath_storage_for_file('.ckpt') )
 
         
+=======
+        output_graph_def = tf.graph_util.convert_variables_to_constants(
+            nn.tf_sess, 
+            tf.get_default_graph().as_graph_def(), 
+            ['out_face_mask','out_celeb_face','out_celeb_face_mask']
+        ) 
+        
+        import tf2onnx
+        with tf.device("/CPU:0"):
+            model_proto, _ = tf2onnx.convert._convert_common(
+                output_graph_def,
+                name='SAEHD',
+                input_names=['in_face:0'],
+                output_names=['out_face_mask:0','out_celeb_face:0','out_celeb_face_mask:0'],
+                opset=13,
+                output_path=output_path)
+                
+>>>>>>> upstream/master
     #override
     def get_model_filename_list(self):
         return self.model_filename_list
@@ -751,7 +795,7 @@ Examples: df, liae, df-d, df-ud, liae-ud, ...
         return ( ('src_loss', np.mean(src_loss) ), ('dst_loss', np.mean(dst_loss) ), )
 
     #override
-    def onGetPreview(self, samples):
+    def onGetPreview(self, samples, for_history=False):
         ( (warped_src, target_src, target_srcm, target_srcm_em),
           (warped_dst, target_dst, target_dstm, target_dstm_em) ) = samples
 

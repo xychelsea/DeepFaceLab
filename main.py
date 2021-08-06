@@ -147,9 +147,18 @@ if __name__ == "__main__":
     p.add_argument('--silent-start', action="store_true", dest="silent_start", default=False, help="Silent start. Automatically chooses Best GPU and last used model.")
     p.add_argument('--dump-ckpt', action="store_true", dest="dump_ckpt", default=False, help="Dump the model to ckpt format.")
     
-    
     p.add_argument('--execute-program', dest="execute_program", default=[], action='append', nargs='+')
     p.set_defaults (func=process_train)
+    
+    def process_exportdfm(arguments):
+        osex.set_process_lowest_prio()
+        from mainscripts import ExportDFM
+        ExportDFM.main(model_class_name = arguments.model_name, saved_models_path = Path(arguments.model_dir))
+
+    p = subparsers.add_parser( "exportdfm", help="Export model to use in DeepFaceLive.")
+    p.add_argument('--model-dir', required=True, action=fixPathAction, dest="model_dir", help="Saved models dir.")
+    p.add_argument('--model', required=True, dest="model_name", choices=pathex.get_all_dir_names_startswith ( Path(__file__).parent / 'models' , 'Model_'), help="Model class name.")
+    p.set_defaults (func=process_exportdfm)
 
     def process_merge(arguments):
         osex.set_process_lowest_prio()
